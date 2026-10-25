@@ -142,3 +142,6 @@ DEBUG = False
 ALLOWED_HOSTS = ['.onrender.com', 'localhost', '127.0.0.1']
 
 
+CSRF_TRUSTED_ORIGINS = [
+    'https://negocio-4dfl.onrender.com',
+]
