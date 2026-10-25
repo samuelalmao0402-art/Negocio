@@ -1,0 +1,156 @@
+{% extends 'Negocioapp/base.html' %}
+{% load static %}
+
+{% block title %}Eliminar Producto - Cositas para las Once{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos personalizados para mantener la estética pastel (Sin marrón) */
+    .card-pastel {
+        background-color: #FDF6EC;
+        border: 1px solid rgba(232, 168, 124, 0.4);
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(232, 168, 124, 0.15);
+    }
+
+    .card-header-warning {
+        background: linear-gradient(135deg, #fcd5ce 0%, #e8a87c 100%) !important;
+        border-bottom: 1px solid rgba(232, 168, 124, 0.4);
+        border-radius: 16px 16px 0 0 !important;
+        color: #3d2314 !important;
+    }
+
+    .text-titulo-pastel {
+        color: #c95c4b;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .btn-pastel-danger {
+        background-color: #c95c4b;
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-pastel-danger:hover {
+        background-color: #b04e3e;
+        color: #ffffff;
+    }
+
+    .btn-pastel-light {
+        background-color: #ffffff;
+        color: #3d2314;
+        border: 1px solid #e8a87c;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-pastel-light:hover {
+        background-color: #fcd5ce;
+        color: #b04e3e;
+    }
+</style>
+
+<div class="container mt-5 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card card-pastel shadow-sm">
+                <div class="card-header card-header-warning py-3 text-center">
+                    <h4 class="mb-0 fw-bold">⚠️ Eliminar Producto</h4>
+                </div>
+                <div class="card-body p-4 p-md-5 text-center">
+                    <div class="mb-3 fs-1" style="color: #c95c4b;">
+                        🥐❌
+                    </div>
+                    <h5 class="fw-bold mb-3 text-titulo-pastel">¿Estás seguro de que deseas eliminar este producto?</h5>
+                    <p class="text-muted small">Esta acción no se puede deshacer y borrará permanentemente el registro del sistema.</p>
+
+                    <!-- Detalle del producto a eliminar -->
+                    <div id="product-info" class="card p-3 mb-4 text-start shadow-sm border-0" style="background-color: #fdf0d5;">
+                        <p class="mb-1 text-secondary"><strong>Nombre:</strong> <span id="prod-nombre" class="text-dark fw-semibold">Cargando...</span></p>
+                        <p class="mb-1 text-secondary"><strong>Categoría:</strong> <span id="prod-categoria" class="text-dark fw-semibold">Cargando...</span></p>
+                        <p class="mb-0 text-secondary"><strong>Precio Venta:</strong> $<span id="prod-precio" class="text-success fw-bold">Cargando...</span></p>
+                    </div>
+
+                    <!-- Alertas -->
+                    <div id="alert-container" class="mt-3 d-none">
+                        <div class="alert border-0 shadow-sm text-center fw-semibold py-2" id="alert-message"></div>
+                    </div>
+
+                    <!-- Botones de Acción -->
+                    <div class="d-flex justify-content-between mt-4 pt-2">
+                        <a href="{% url 'productos' %}" class="btn btn-pastel-light px-4 fw-bold shadow-sm">⬅️ Cancelar</a>
+                        <button id="btn-eliminar" class="btn btn-pastel-danger px-4 fw-bold shadow-sm">Sí, Eliminar</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script para cargar datos y ejecutar el DELETE (Mantiene intacta tu lógica original) -->
+<script>
+    const productoId = "{{ producto_id }}";
+    const token = localStorage.getItem('authToken');
+
+    // 1. Cargar los datos del producto al abrir la vista para mostrarlos en pantalla
+    fetch(`/api/producto/${productoId}/`, {
+        method: 'GET',
+        headers: {
+            'Authorization': token ? `Token ${token}` : ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            document.getElementById('prod-nombre').textContent = data.nombre;
+            document.getElementById('prod-categoria').textContent = data.categoria;
+            document.getElementById('prod-precio').textContent = data.precio_venta;
+        } else {
+            document.getElementById('product-info').innerHTML = '<p class="text-danger mb-0 small text-center fw-semibold">No se pudo cargar la información del producto.</p>';
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+    });
+
+    // 2. Ejecutar la petición DELETE al hacer clic en el botón de confirmar
+    document.getElementById('btn-eliminar').addEventListener('click', function() {
+        const alertContainer = document.getElementById('alert-container');
+        const alertMessage = document.getElementById('alert-message');
+
+        fetch(`/api/producto/${productoId}/`, {
+            method: 'DELETE',
+            headers: {
+                'Authorization': token ? `Token ${token}` : ''
+            }
+        })
+        .then(response => {
+            alertContainer.classList.remove('d-none');
+            if (response.status === 204 || response.ok) {
+                alertMessage.className = 'alert border-0 shadow-sm fw-semibold py-2';
+                alertMessage.style.backgroundColor = '#d8f3dc';
+                alertMessage.style.color = '#2d6a4f';
+                alertMessage.textContent = '¡Producto eliminado con éxito!';
+                setTimeout(() => {
+                    window.location.href = '/producto/';
+                }, 1500);
+            } else {
+                alertMessage.className = 'alert border-0 shadow-sm fw-semibold py-2';
+                alertMessage.style.backgroundColor = '#fcd5ce';
+                alertMessage.style.color = '#c95c4b';
+                alertMessage.textContent = 'Error al intentar eliminar el producto.';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alertContainer.classList.remove('d-none');
+            alertMessage.className = 'alert border-0 shadow-sm fw-semibold py-2';
+            alertMessage.style.backgroundColor = '#fcd5ce';
+            alertMessage.style.color = '#c95c4b';
+            alertMessage.textContent = 'Error de conexión con el servidor.';
+        });
+    });
+</script>
+{% endblock %}

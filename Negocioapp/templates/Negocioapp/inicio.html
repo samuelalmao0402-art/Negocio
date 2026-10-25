@@ -1,0 +1,314 @@
+{% extends 'Negocioapp/base.html' %}
+
+{% block content %}
+{% load static %}
+<style>
+    /* Estilos personalizados para la estética pastel y acogedora (Sin marrón) */
+    .banner-pastel {
+        background: linear-gradient(135deg, #fcd5ce 0%, #fdf0d5 100%);
+        border: 2px solid #e8a87c;
+        border-radius: 16px;
+    }
+    
+    .card-interactiva {
+        background-color: #FDF6EC;
+        border: 1px solid rgba(232, 168, 124, 0.4);
+        border-radius: 16px;
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .card-interactiva:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 25px rgba(232, 168, 124, 0.25) !important;
+        border-color: #c95c4b;
+    }
+
+    .btn-pastel-primary {
+        background-color: #c95c4b;
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-pastel-primary:hover {
+        background-color: #b04e3e;
+        color: #ffffff;
+    }
+
+    .btn-pastel-outline {
+        border: 2px solid #c95c4b;
+        color: #c95c4b;
+        background-color: transparent;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-pastel-outline:hover {
+        background-color: #c95c4b;
+        color: #ffffff;
+    }
+
+    .text-titulo-pastel {
+        color: #c95c4b;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    /* Estilo para las imágenes dentro de las tarjetas */
+    .card-img-custom {
+        width: 70px;
+        height: 70px;
+        object-fit: cover;
+        border-radius: 50%;
+        border: 2px solid #e8a87c;
+        box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+        margin: 0 auto 15px auto;
+    }
+</style>
+
+<div class="container py-4">
+    <!-- Banner de bienvenida con nuevo título -->
+    <div class="p-5 mb-4 banner-pastel shadow-sm">
+        <div class="container-fluid py-2">
+            <h1 class="display-5 fw-bold text-titulo-pastel">Negocio las Primas 🥐👗</h1>
+            <p class="col-md-9 fs-5 text-secondary">Bienvenido al sistema de gestión de tu negocio. Administra tus productos, controla inventarios y revisa el flujo de ventas con un estilo único y acogedor.</p>
+        </div>
+    </div>
+
+    <!-- Panel Unificado: Resumen de Ventas y Conversor en una sola tarjeta -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card card-interactiva p-4">
+                
+                <!-- Sección Superior: Resumen de Ventas de Hoy -->
+                <div>
+                    <h4 class="fw-bold text-titulo-pastel mb-1">📊 Resumen de Ventas de Hoy</h4>
+                    <p class="text-muted mb-0">Corte diario vinculado a tus registros de ventas reales.</p>
+                </div>
+
+                <div class="d-flex justify-content-around flex-wrap gap-3 text-center my-3">
+                    <div class="px-3">
+                        <span class="d-block text-muted small fw-semibold">Transacciones</span>
+                        <h3 id="cantidadVentas" class="fw-bold text-titulo-pastel mb-0">-</h3>
+                    </div>
+                    <div class="px-3 border-start border-warning-subtle">
+                        <span class="d-block text-muted small fw-semibold">Total Ventas (Valor Numérico)</span>
+                        <h3 class="fw-bold text-success mb-0">$<span id="totalBase">0</span></h3>
+                    </div>
+                </div>
+
+                <hr class="my-4 text-muted opacity-25">
+
+                <!-- Sección Inferior: Conversor de Divisas Libre -->
+                <div>
+                    <h4 class="fw-bold text-titulo-pastel mb-1">💱 Conversor de Divisas Libre</h4>
+                    <p class="text-muted mb-3">Calcula y convierte cualquier monto de manera independiente entre monedas.</p>
+                </div>
+                
+                <div class="row g-3 align-items-end p-3 rounded" style="background-color: #fdf0d5; border: 1px dashed #e8a87c;">
+                    <div class="col-md-4">
+                        <label for="inputCantidad" class="form-label small fw-bold text-secondary">Cantidad a convertir:</label>
+                        <input type="number" id="inputCantidad" class="form-control bg-white border-0 shadow-sm" value="150000" oninput="calcularConversorLibre()">
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="selectOrigenLibre" class="form-label small fw-bold text-secondary">De:</label>
+                        <select id="selectOrigenLibre" class="form-select bg-white border-0 shadow-sm" onchange="calcularConversorLibre()">
+                            <option value="CLP" selected>CLP</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="ARS">ARS</option>
+                            <option value="BRL">BRL</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-3">
+                        <label for="selectDestinoLibre" class="form-label small fw-bold text-secondary">A:</label>
+                        <select id="selectDestinoLibre" class="form-select bg-white border-0 shadow-sm" onchange="calcularConversorLibre()">
+                            <option value="ARS" selected>ARS</option>
+                            <option value="CLP">CLP</option>
+                            <option value="USD">USD</option>
+                            <option value="EUR">EUR</option>
+                            <option value="BRL">BRL</option>
+                        </select>
+                    </div>
+
+                    <div class="col-md-2">
+                        <button class="btn btn-pastel-outline w-100 fw-semibold shadow-sm" type="button" onclick="usarTotalVentasReal()">Usar Ventas</button>
+                    </div>
+                </div>
+
+                <div class="mt-3 text-center p-3 bg-white border-0 shadow-sm rounded">
+                    <span class="d-block text-muted small fw-semibold">Resultado de la Conversión</span>
+                    <h3 class="fw-bold mb-0" style="color: #c95c4b;">$<span id="resultadoLibre">0.00</span> <small id="labelMonedaLibre" class="fs-6 text-muted">ARS</small></h3>
+                    <small id="textoErrorApi" class="text-danger d-block mt-1"></small>
+                </div>
+
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjeta de Historial de Totales por Día -->
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card card-interactiva p-4">
+                <h4 class="fw-bold text-titulo-pastel mb-1">📅 Historial de Totales por Día</h4>
+                <p class="text-muted mb-3">Registro consolidado de los cierres de ventas diarios.</p>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover align-middle bg-transparent">
+                        <thead style="background-color: #fdf0d5;">
+                            <tr>
+                                <th class="py-3 text-secondary">Fecha</th>
+                                <th class="text-center py-3 text-secondary">Transacciones</th>
+                                <th class="text-end py-3 text-secondary">Total Recaudado (CLP)</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tablaHistorialVentas">
+                            <tr>
+                                <td colspan="3" class="text-center text-muted py-3">Cargando historial...</td>
+                            </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Tarjetas de acceso rápido con imágenes ilustrativas -->
+    <div class="row g-4">
+        <div class="col-md-4">
+            <div class="card card-interactiva h-100">
+                <div class="card-body text-center p-4 d-flex flex-column justify-content-between">
+                    <div>
+                        <img src="{% static 'Negocioapp/img/logo_primas.jpg' %}" alt="Productos" class="card-img-custom">
+                        <h4 class="card-title fw-bold text-titulo-pastel">Productos</h4>
+                        <p class="card-text text-muted small">Administra el catálogo completo de productos, agrega nuevos artículos o edítalos.</p>
+                    </div>
+                    <a href="{% url 'productos' %}" class="btn btn-pastel-primary w-100 mt-3 fw-semibold shadow-sm">Ir a Productos</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-interactiva h-100">
+                <div class="card-body text-center p-4 d-flex flex-column justify-content-between">
+                    <div>
+                        <img src="{% static 'Negocioapp/img/logo_primas.jpg' %}" alt="Stock" class="card-img-custom">
+                        <h4 class="card-title fw-bold text-titulo-pastel">Stock e Inventario</h4>
+                        <p class="card-text text-muted small">Monitorea los niveles de stock actuales y mínimos para evitar quiebres.</p>
+                    </div>
+                    <a href="{% url 'ver_stock' %}" class="btn btn-pastel-primary w-100 mt-3 fw-semibold shadow-sm">Ver Stock</a>
+                </div>
+            </div>
+        </div>
+        <div class="col-md-4">
+            <div class="card card-interactiva h-100">
+                <div class="card-body text-center p-4 d-flex flex-column justify-content-between">
+                    <div>
+                        <img src="{% static 'Negocioapp/img/logo_primas.jpg' %}" alt="Ventas" class="card-img-custom">
+                        <h4 class="card-title fw-bold text-titulo-pastel">Ventas</h4>
+                        <p class="card-text text-muted small">Registra nuevas transacciones de venta y consulta el historial detallado.</p>
+                    </div>
+                    <a href="{% url 'ventas' %}" class="btn btn-pastel-primary w-100 mt-3 fw-semibold shadow-sm">Ver Ventas</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+let totalVentasGlobal = 0;
+
+async function cargarResumenVentasDia() {
+    try {
+        const response = await fetch(`/api/resumen_venta/`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            document.getElementById('cantidadVentas').innerText = data.cantidad_ventas_hoy;
+            totalVentasGlobal = data.total_base || 0;
+            document.getElementById('totalBase').innerText = totalVentasGlobal.toLocaleString('es-CL');
+        }
+    } catch (error) {
+        console.error('Error al conectar con la API de resumen:', error);
+    }
+}
+
+async function calcularConversorLibre() {
+    const cantidad = document.getElementById('inputCantidad').value || 0;
+    const origen = document.getElementById('selectOrigenLibre').value;
+    const destino = document.getElementById('selectDestinoLibre').value;
+
+    try {
+        const response = await fetch(`/api/resumen_venta/?from=${origen}&to=${destino}&amount=${cantidad}`, {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const data = await response.json();
+
+        if (response.ok) {
+            // Actualiza de forma dinámica la etiqueta del resultado según la moneda seleccionada en "A:"
+            document.getElementById('labelMonedaLibre').innerText = destino;
+
+            if (data.conversion && data.conversion.total_convertido !== null) {
+                document.getElementById('resultadoLibre').innerText = data.conversion.total_convertido.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            }
+            if (data.error_api) {
+                document.getElementById('textoErrorApi').innerText = "Aviso API: " + data.error_api;
+            } else {
+                document.getElementById('textoErrorApi').innerText = "";
+            }
+        }
+    } catch (error) {
+        console.error('Error en el conversor libre:', error);
+    }
+}
+
+function usarTotalVentasReal() {
+    document.getElementById('inputCantidad').value = totalVentasGlobal;
+    calcularConversorLibre();
+}
+
+async function cargarHistorialVentas() {
+    try {
+        const response = await fetch('/api/historial_ventas/', {
+            method: 'GET',
+            headers: { 'Content-Type': 'application/json' }
+        });
+        const historial = await response.json();
+
+        const tbody = document.getElementById('tablaHistorialVentas');
+        tbody.innerHTML = '';
+
+        if (historial.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="text-center text-muted py-3">No hay registros de ventas anteriores.</td></tr>`;
+            return;
+        }
+
+        historial.forEach(row => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="fw-semibold text-secondary">${row.fecha}</td>
+                <td class="text-center"><span class="badge rounded-pill px-3 py-2" style="background-color: #e8a87c; color: #fff;">${row.cantidad_ventas}</span></td>
+                <td class="text-end fw-bold text-success">$${row.total_recaudado.toLocaleString('es-CL')}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+    } catch (error) {
+        console.error('Error al cargar el historial de ventas:', error);
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    cargarResumenVentasDia();
+    calcularConversorLibre();
+    cargarHistorialVentas();
+
+    setInterval(cargarResumenVentasDia, 2000);
+    window.addEventListener('focus', cargarResumenVentasDia);
+});
+</script>
+{% endblock %}

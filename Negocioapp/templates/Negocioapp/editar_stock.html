@@ -1,0 +1,178 @@
+{% extends 'Negocioapp/base.html' %}
+{% load static %}
+
+{% block title %}Editar Stock - Cositas para las Once{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos personalizados para mantener la estética pastel (Sin marrón) */
+    .card-pastel {
+        background-color: #FDF6EC;
+        border: 1px solid rgba(232, 168, 124, 0.4);
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(232, 168, 124, 0.15);
+    }
+
+    .card-header-pastel {
+        background: linear-gradient(135deg, #fcd5ce 0%, #fdf0d5 100%) !important;
+        border-bottom: 1px solid rgba(232, 168, 124, 0.4);
+        border-radius: 16px 16px 0 0 !important;
+    }
+
+    .text-titulo-pastel {
+        color: #c95c4b;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .btn-pastel-primary {
+        background-color: #c95c4b;
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-pastel-primary:hover {
+        background-color: #b04e3e;
+        color: #ffffff;
+    }
+
+    .btn-pastel-light {
+        background-color: #ffffff;
+        color: #3d2314;
+        border: 1px solid #e8a87c;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-pastel-light:hover {
+        background-color: #fcd5ce;
+        color: #b04e3e;
+    }
+
+    .form-control {
+        background-color: #ffffff;
+        border: 1px solid rgba(232, 168, 124, 0.6);
+        border-radius: 10px;
+        color: #3d2314;
+    }
+
+    .form-control:focus {
+        border-color: #c95c4b;
+        box-shadow: 0 0 0 0.25rem rgba(201, 92, 75, 0.15);
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-6">
+            <div class="card card-pastel shadow-sm">
+                <div class="card-header card-header-pastel py-3 px-4 text-center">
+                    <h4 class="mb-0 fw-bold text-titulo-pastel">✨ Editar Stock</h4>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form id="editar-stock-form">
+                        <div class="mb-3">
+                            <label for="producto-nombre" class="form-label fw-bold small text-secondary">Producto</label>
+                            <input type="text" class="form-control bg-light" id="producto-nombre" disabled>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="stock_actual" class="form-label fw-bold small text-secondary">Stock Actual</label>
+                            <input type="number" class="form-control" id="stock_actual" min="0" required>
+                        </div>
+
+                        <div class="mb-3">
+                            <label for="stock_minimo" class="form-label fw-bold small text-secondary">Stock Mínimo</label>
+                            <input type="number" class="form-control" id="stock_minimo" min="1" required>
+                        </div>
+
+                        <!-- Alertas -->
+                        <div id="alert-container" class="mt-4 d-none">
+                            <div class="alert border-0 shadow-sm text-center fw-semibold py-2" id="alert-message"></div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="d-flex justify-content-between mt-4 pt-2">
+                            <a href="{% url 'ver_stock' %}" class="btn btn-pastel-light px-4 fw-bold shadow-sm">⬅️ Cancelar</a>
+                            <button type="submit" class="btn btn-pastel-primary px-4 fw-bold shadow-sm">✨ Guardar Cambios</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Script para cargar y actualizar el stock (Mantiene intacta tu lógica original) -->
+<script>
+    const stockId = "{{ stock_id }}";
+    const token = localStorage.getItem('authToken');
+
+    // Cargar datos actuales de stock
+    fetch(`/api/stock/${stockId}/`, {
+        method: 'GET',
+        headers: {
+            'Authorization': token ? `Token ${token}` : ''
+        }
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.id) {
+            document.getElementById('producto-nombre').value = data.producto_nombre || data.producto || 'Producto #' + data.id;
+            document.getElementById('stock_actual').value = data.stock_actual;
+            document.getElementById('stock_minimo').value = data.stock_minimo;
+        } else {
+            alert('No se pudo cargar la información del stock.');
+        }
+    })
+    .catch(error => console.error('Error:', error));
+
+    // Enviar cambios por PUT
+    document.getElementById('editar-stock-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const alertContainer = document.getElementById('alert-container');
+        const alertMessage = document.getElementById('alert-message');
+
+        const payload = {
+            stock_actual: parseInt(document.getElementById('stock_actual').value),
+            stock_minimo: parseInt(document.getElementById('stock_minimo').value)
+        };
+
+        fetch(`/api/stock/${stockId}/`, {
+            method: 'PUT',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Token ${token}` : ''
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json().then(data => ({ status: response.status, body: data })))
+        .then(obj => {
+            alertContainer.classList.remove('d-none');
+            if (obj.status === 200) {
+                alertMessage.className = 'alert border-0 shadow-sm fw-semibold py-2';
+                alertMessage.style.backgroundColor = '#d8f3dc';
+                alertMessage.style.color = '#2d6a4f';
+                alertMessage.textContent = '¡Stock actualizado con éxito!';
+                setTimeout(() => {
+                    window.location.href = '/stock/';
+                }, 1500);
+            } else {
+                alertMessage.className = 'alert border-0 shadow-sm fw-semibold py-2';
+                alertMessage.style.backgroundColor = '#fcd5ce';
+                alertMessage.style.color = '#c95c4b';
+                alertMessage.textContent = obj.body.error || 'Error al actualizar el stock.';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alertContainer.classList.remove('d-none');
+            alertMessage.className = 'alert border-0 shadow-sm fw-semibold py-2';
+            alertMessage.style.backgroundColor = '#fcd5ce';
+            alertMessage.style.color = '#c95c4b';
+            alertMessage.textContent = 'Error de conexión con el servidor.';
+        });
+    });
+</script>
+{% endblock %}

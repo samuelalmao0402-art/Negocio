@@ -1,0 +1,216 @@
+{% extends 'Negocioapp/base.html' %}
+{% load static %}
+
+{% block title %}Registrar Nueva Venta - Cositas para las Once{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos personalizados para mantener la estética pastel (Sin marrón) */
+    .card-pastel {
+        background-color: #FDF6EC;
+        border: 1px solid rgba(232, 168, 124, 0.4);
+        border-radius: 16px;
+        box-shadow: 0 10px 25px rgba(232, 168, 124, 0.15);
+    }
+
+    .card-header-pastel {
+        background: linear-gradient(135deg, #fcd5ce 0%, #fdf0d5 100%) !important;
+        border-bottom: 1px solid rgba(232, 168, 124, 0.4);
+        border-radius: 16px 16px 0 0 !important;
+    }
+
+    .text-titulo-pastel {
+        color: #c95c4b;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .btn-pastel-primary {
+        background-color: #c95c4b;
+        color: #ffffff;
+        border: none;
+        border-radius: 10px;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-pastel-primary:hover {
+        background-color: #b04e3e;
+        color: #ffffff;
+    }
+
+    .btn-pastel-light {
+        background-color: #ffffff;
+        color: #3d2314;
+        border: 1px solid #e8a87c;
+        border-radius: 10px;
+        transition: all 0.2s ease;
+    }
+
+    .btn-pastel-light:hover {
+        background-color: #fcd5ce;
+        color: #b04e3e;
+    }
+
+    .form-control, .form-select {
+        background-color: #ffffff;
+        border: 1px solid rgba(232, 168, 124, 0.6);
+        border-radius: 10px;
+        color: #3d2314;
+    }
+
+    .form-control:focus, .form-select:focus {
+        border-color: #c95c4b;
+        box-shadow: 0 0 0 0.25rem rgba(201, 92, 75, 0.15);
+    }
+</style>
+
+<div class="container mt-4 mb-5">
+    <div class="row justify-content-center">
+        <div class="col-md-7">
+            <div class="card card-pastel shadow-sm">
+                <div class="card-header card-header-pastel py-3 px-4 text-center">
+                    <h4 class="mb-0 fw-bold text-titulo-pastel">✨ Registrar Nueva Venta</h4>
+                </div>
+                <div class="card-body p-4 p-md-5">
+                    <form id="crear-venta-form">
+                        <!-- Seleccionar Producto -->
+                        <div class="mb-3">
+                            <label for="producto" class="form-label fw-bold small text-secondary">Seleccionar Producto</label>
+                            <select class="form-select" id="producto" required>
+                                <option value="" selected disabled>Cargando productos...</option>
+                            </select>
+                        </div>
+
+                        <!-- Cantidad -->
+                        <div class="mb-3">
+                            <label for="cantidad" class="form-label fw-bold small text-secondary">Cantidad</label>
+                            <input type="number" class="form-control" id="cantidad" min="1" value="1" required>
+                        </div>
+
+                        <!-- Método de Pago -->
+                        <div class="mb-3">
+                            <label for="metodo_pago" class="form-label fw-bold small text-secondary">Método de Pago</label>
+                            <select class="form-select" id="metodo_pago" required>
+                                <option value="Efectivo" selected>Efectivo</option>
+                                <option value="Tarjeta">Tarjeta</option>
+                                <option value="Transferencia">Transferencia</option>
+                            </select>
+                        </div>
+
+                        <!-- Estado -->
+                        <div class="mb-3">
+                            <label for="estado" class="form-label fw-bold small text-secondary">Estado</label>
+                            <select class="form-select" id="estado" required>
+                                <option value="Completado" selected>Completado</option>
+                                <option value="Pendiente">Pendiente</option>
+                            </select>
+                        </div>
+
+                        <!-- Alertas -->
+                        <div id="alert-container" class="mt-4 d-none">
+                            <div class="alert border-0 shadow-sm text-center fw-semibold py-2" id="alert-message"></div>
+                        </div>
+
+                        <!-- Botones de Acción -->
+                        <div class="d-flex justify-content-between mt-4 pt-2">
+                            <a href="{% url 'ventas' %}" class="btn btn-pastel-light px-4 fw-bold shadow-sm">⬅️ Cancelar</a>
+                            <button type="submit" class="btn btn-pastel-primary px-4 fw-bold shadow-sm">✨ Registrar Venta</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const token = localStorage.getItem('authToken');
+    let productosGlobal = []; // Para almacenar los datos de los productos y sus precios
+
+    // 1. Obtener la lista de productos
+    fetch('/api/producto/', {
+        method: 'GET',
+        headers: { 'Authorization': token ? `Token ${token}` : '' }
+    })
+    .then(response => response.json())
+    .then(data => {
+        const selectProd = document.getElementById('producto');
+        selectProd.innerHTML = '<option value="" selected disabled>-- Seleccione un producto --</option>';
+        
+        if (Array.isArray(data) && data.length > 0) {
+            productosGlobal = data; // Guardamos en memoria
+            data.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                // Asumimos que el precio se llama precio_venta o precio
+                const precio = p.precio_venta || p.precio || 0;
+                opt.textContent = `${p.nombre} (Stock: ${p.stock_actual ?? 'N/A'} | Precio: $${precio})`;
+                selectProd.appendChild(opt);
+            });
+        } else {
+            selectProd.innerHTML = '<option value="" disabled>No hay productos disponibles</option>';
+        }
+    })
+    .catch(error => console.error('Error al cargar productos:', error));
+
+    // 2. Enviar los datos completos por POST
+    document.getElementById('crear-venta-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const alertContainer = document.getElementById('alert-container');
+        const alertMessage = document.getElementById('alert-message');
+
+        const productoIdSeleccionado = parseInt(document.getElementById('producto').value);
+        const cantidad = parseInt(document.getElementById('cantidad').value);
+        const metodoPago = document.getElementById('metodo_pago').value;
+        const estado = document.getElementById('estado').value;
+
+        // Buscamos el producto seleccionado en nuestra lista global para extraer su precio
+        const productoObj = productosGlobal.find(p => p.id === productoIdSeleccionado);
+        const precioUnitario = productoObj ? (productoObj.precio_venta || productoObj.precio || 0) : 0;
+        const total = precioUnitario * cantidad;
+
+        // Armamos el payload con EXACTAMENTE los campos que exige tu vista POST
+        const payload = {
+            fecha_venta: new Date().toISOString(), // Fecha y hora actual en formato ISO
+            estado: estado,
+            metodo_pago: metodoPago,
+            total: total,
+            producto_id: productoIdSeleccionado,
+            cantidad: cantidad,
+            precio_unitario: precioUnitario
+        };
+
+        fetch('/api/venta/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'Authorization': token ? `Token ${token}` : ''
+            },
+            body: JSON.stringify(payload)
+        })
+        .then(response => response.json().then(data => ({ status: response.status, body: data })))
+        .then(obj => {
+            alertContainer.classList.remove('d-none');
+            if (obj.status === 201 || obj.status === 200) {
+                alertMessage.className = 'alert border-0 shadow-sm fw-semibold py-2';
+                alertMessage.style.backgroundColor = '#d8f3dc';
+                alertMessage.style.color = '#2d6a4f';
+                alertMessage.textContent = '¡Venta registrada con éxito!';
+                setTimeout(() => { window.location.href = '/venta/'; }, 1500);
+            } else {
+                alertMessage.className = 'alert border-0 shadow-sm fw-semibold py-2';
+                alertMessage.style.backgroundColor = '#fcd5ce';
+                alertMessage.style.color = '#c95c4b';
+                alertMessage.textContent = obj.body.error || obj.body.mensaje || 'Error al registrar la venta.';
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alertContainer.classList.remove('d-none');
+            alertMessage.className = 'alert border-0 shadow-sm fw-semibold py-2';
+            alertMessage.style.backgroundColor = '#fcd5ce';
+            alertMessage.style.color = '#c95c4b';
+            alertMessage.textContent = 'Error de conexión con el servidor.';
+        });
+    });
+</script>
+{% endblock %}

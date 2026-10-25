@@ -1,0 +1,120 @@
+{% extends 'Negocioapp/base.html' %}
+{% load static %}
+
+{% block title %}Iniciar Sesión - Cositas para las Once{% endblock %}
+
+{% block content %}
+<style>
+    /* Estilos pasteles acogedores y modernos para el Login (Sin marrón) */
+    .card-login-pastel {
+        background-color: #FDF6EC;
+        border: 1px solid rgba(232, 168, 124, 0.4);
+        border-radius: 20px;
+        box-shadow: 0 10px 25px rgba(232, 168, 124, 0.25);
+    }
+
+    .btn-pastel-primary {
+        background-color: #c95c4b;
+        color: #ffffff;
+        border: none;
+        border-radius: 12px;
+        transition: background-color 0.2s ease;
+    }
+
+    .btn-pastel-primary:hover {
+        background-color: #b04e3e;
+        color: #ffffff;
+    }
+
+    .text-titulo-pastel {
+        color: #c95c4b;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    }
+
+    .form-control:focus {
+        border-color: #e8a87c;
+        box-shadow: 0 0 0 0.25rem rgba(232, 168, 124, 0.25);
+    }
+</style>
+
+<div class="row justify-content-center align-items-center" style="min-height: 75vh;">
+    <div class="col-md-5 col-lg-4">
+        <div class="card card-login-pastel p-4 p-md-5">
+            
+            <div class="text-center mb-4">
+                <!-- Logotipo circular decorativo -->
+                <img src="{% static 'Negocioapp/img/logo_primas.jpg' %}" alt="Logo" class="app-logo mb-3 shadow-sm" style="width: 75px; height: 75px;">
+                <h3 class="fw-bold text-titulo-pastel">¡Hola de nuevo! 👋</h3>
+                <p class="text-muted small">Accede al sistema de gestión de "Productos las Primas"</p>
+            </div>
+
+            <!-- Formulario de Login -->
+            <form id="login-form">
+                <div class="mb-3">
+                    <label for="username" class="form-label small fw-bold text-secondary">Usuario</label>
+                    <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                        <span class="input-group-text bg-white border-0" style="color: #c95c4b;"><i class="bi bi-person fs-5"></i></span>
+                        <input type="text" class="form-control bg-white border-0 py-2" id="username" required placeholder="Ingresa tu usuario">
+                    </div>
+                </div>
+                
+                <div class="mb-4">
+                    <label for="password" class="form-label small fw-bold text-secondary">Contraseña</label>
+                    <div class="input-group shadow-sm rounded-3 overflow-hidden">
+                        <span class="input-group-text bg-white border-0" style="color: #c95c4b;"><i class="bi bi-lock fs-5"></i></span>
+                        <input type="password" class="form-control bg-white border-0 py-2" id="password" required placeholder="••••••••">
+                    </div>
+                </div>
+
+                <!-- Contenedor para errores de autenticación -->
+                <div id="error-container" class="alert d-none mb-3 py-2 text-center rounded-3 shadow-sm" role="alert" style="background-color: #fcd5ce; border: none; color: #c95c4b; font-weight: 600;"></div>
+
+                <button type="submit" class="btn btn-pastel-primary w-100 py-2 fw-semibold shadow-sm">
+                    <i class="bi bi-box-arrow-in-right me-1"></i> Ingresar
+                </button>
+            </form>
+
+            <div class="text-center mt-4">
+                <small class="text-muted" style="font-size: 0.8rem;">Negocio las Primas &copy; 2026</small>
+            </div>
+
+        </div>
+    </div>
+</div>
+
+<!-- Script para consumir la API de Login (Mantiene intacta tu lógica original) -->
+<script>
+    document.getElementById('login-form').addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        const username = document.getElementById('username').value;
+        const password = document.getElementById('password').value;
+        const errorContainer = document.getElementById('error-container');
+
+        fetch('/api/login/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({ username: username, password: password })
+        })
+        .then(response => response.json().then(data => ({ status: response.status, body: data })))
+        .then(obj => {
+            if (obj.status === 200) {
+                // Guardamos el token en el almacenamiento local del navegador
+                localStorage.setItem('authToken', obj.body.token);
+                // Redirigimos al inicio del sistema
+                window.location.href = '/inicio/';
+            } else {
+                errorContainer.textContent = obj.body.error || 'Usuario o contraseña incorrecta';
+                errorContainer.classList.remove('d-none');
+            }
+        })
+        .catch(error => {
+            console.error('Error de conexión:', error);
+            errorContainer.textContent = 'Ocurrió un error al conectar con el servidor.';
+            errorContainer.classList.remove('d-none');
+        });
+    });
+</script>
+{% endblock %}
