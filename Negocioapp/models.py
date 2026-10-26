@@ -10,6 +10,9 @@ class Producto(models.Model):
             ('alimento','ALIMENTO'),
             ('higiene','HIGIENE'),
             ('ropa','ROPA'),
+            ('maquillaje','MAQUILLAJE'),
+            ('adornos','ADORNOS'),
+            ('perfumes','PERFUMES')
         ]
     categoria = models.CharField(max_length=15, choices=T_categoria)
     fecha_caducidad = models.DateTimeField(null=True, blank=True)
