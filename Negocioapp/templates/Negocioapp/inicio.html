@@ -217,6 +217,11 @@
 </div>
 
 <script>
+// --- DETECCIÓN AUTOMÁTICA DE ZONA HORARIA PARA VIAJES ---
+const userTz = Intl.DateTimeFormat().resolvedOptions().timeZone;
+document.cookie = `user_timezone=${userTz}; path=/; max-age=31536000`;
+// ---------------------------------------------------------
+
 let totalVentasGlobal = 0;
 
 async function cargarResumenVentasDia() {
@@ -250,7 +255,6 @@ async function calcularConversorLibre() {
         const data = await response.json();
 
         if (response.ok) {
-            // Actualiza de forma dinámica la etiqueta del resultado según la moneda seleccionada en "A:"
             document.getElementById('labelMonedaLibre').innerText = destino;
 
             if (data.conversion && data.conversion.total_convertido !== null) {
