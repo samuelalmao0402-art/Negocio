@@ -79,7 +79,7 @@ WSGI_APPLICATION = 'Negocio.wsgi.application'
 
 DATABASES = {
     'default': dj_database_url.config(
-        default=os.environ.get('postgresql://neondb_owner:npg_rA1SdOVqWaM2@ep-gentle-haze-b4waxm0l.c-6.us-east-2.aws.neon.tech/neondb?sslmode=require&channel_binding=require'),
+        default=os.environ.get('DATABASE_URL'),
         conn_max_age=600
     )
 }
