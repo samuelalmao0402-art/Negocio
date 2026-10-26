@@ -24,7 +24,7 @@ class Stock(models.Model):
     stock_minimo = models.IntegerField(default=1)
 
 class Venta(models.Model):
-    fecha_venta = models.DateTimeField()
+    fecha_venta = models.DateTimeField(db_index=True)
     vendedor = models.ForeignKey(User, on_delete=models.PROTECT)
     T_estado = [
         ('completada','COMPLETADA'),
