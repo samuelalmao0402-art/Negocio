@@ -157,6 +157,11 @@ class ProductoApiView(APIView):
                 'error': 'Ningun campo puede estar vacio, son obligatorios'
             }, status=status.HTTP_400_BAD_REQUEST)
 
+        if precio_compra < 0 or precio_venta < 0:
+            return Response({
+                'error': 'Los campos precio de compra y de venta no pueden ser negativos'
+            }, status=status.HTTP_400_BAD_REQUEST)            
+
         if Producto.objects.filter(nombre__iexact=nombre).exists():
             return Response({
                 'error': 'No pueden existir productos con el mismo nombre, utiliza otro nombre '
