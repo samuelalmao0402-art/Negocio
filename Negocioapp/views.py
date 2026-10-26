@@ -147,17 +147,17 @@ class ProductoApiView(APIView):
         categoria = request.data.get('categoria')
         fecha_caducidad= request.data.get('fecha_caducidad')
         fecha_registro = request.data.get('fecha_registro')
-        precio_compra = request.data.get('precio_compra')
-        precio_venta = request.data.get('precio_venta')
+        precio_compra = int(request.data.get('precio_compra'))
+        precio_venta = int(request.data.get('precio_venta'))
         estado = request.data.get('estado')
 
-        if not nombre or not descripcion or not categoria or not fecha_registro or not precio_compra or not precio_venta or estado is None:
+        if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None or  precio_venta is None or estado is None:
 
             return Response({
                 'error': 'Ningun campo puede estar vacio, son obligatorios'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        if precio_compra < 0 or precio_venta < 0:
+        if precio_compra <= 0 or precio_venta <= 0:
             return Response({
                 'error': 'Los campos precio de compra y de venta no pueden ser negativos'
             }, status=status.HTTP_400_BAD_REQUEST)            
@@ -249,11 +249,21 @@ class ProductoDetallApiView(APIView):
         precio_venta = request.data.get('precio_venta')
         estado = request.data.get('estado')
 
-        if not nombre or not descripcion or not categoria or not fecha_registro or not precio_compra or not precio_venta or estado is None:
+        if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None  or precio_venta is None or estado is None:
     
                 return Response({
                     'error': 'Ningun campo puede estar vacio, son obligatorios'
                 }, status=status.HTTP_400_BAD_REQUEST)
+        
+        if precio_compra < 0 or precio_venta < 0:
+            return Response({
+                'error': 'Los campos precio de compra y de venta no pueden ser negativos'
+            }, status=status.HTTP_400_BAD_REQUEST)            
+
+        if Producto.objects.filter(nombre__iexact=nombre).exclude(id=producto.id).exists():
+            return Response({
+                'error': 'No pueden existir productos con el mismo nombre, utiliza otro nombre '
+            },status=status.HTTP_400_BAD_REQUEST)
     
         producto.nombre = nombre 
         producto.descripcion=descripcion
@@ -289,9 +299,26 @@ class ProductoDetallApiView(APIView):
         categoria = request.data.get('categoria',producto.categoria)
         fecha_caducidad= request.data.get('fecha_caducidad',producto.fecha_caducidad)
         fecha_registro = request.data.get('fecha_registro',producto.fecha_registro)
-        precio_compra = request.data.get('precio_compra',producto.precio_compra)
-        precio_venta = request.data.get('precio_venta',producto.precio_venta)
+        precio_compra = int(request.data.get('precio_compra',producto.precio_compra))
+        precio_venta = int(request.data.get('precio_venta',producto.precio_venta))
         estado = request.data.get('estado',producto.estado)
+
+        
+        if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None  or precio_venta is None or estado is None:
+                return Response({
+                    'error': 'Ningun campo puede estar vacio, son obligatorios'
+                }, status=status.HTTP_400_BAD_REQUEST)
+
+        if precio_compra <= 0 or precio_venta <= 0:
+            return Response({
+                'error': 'Los campos precio de compra y de venta no pueden ser negativos'
+            }, status=status.HTTP_400_BAD_REQUEST)            
+
+        if Producto.objects.filter(nombre__iexact=nombre).exclude(id=producto.id).exists():
+            return Response({
+                'error': 'No pueden existir productos con el mismo nombre, utiliza otro nombre '
+            },status=status.HTTP_400_BAD_REQUEST)
+    
 
         producto.nombre = nombre 
         producto.descripcion=descripcion
