@@ -135,7 +135,7 @@ STORAGES = {
     },
     # Para los archivos estáticos con WhiteNoise (sin manifiesto estricto)
     "staticfiles": {
-        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+        "BACKEND": "cloudinary_storage.storage.StaticCloudinaryStorage",
     },
 }
 
