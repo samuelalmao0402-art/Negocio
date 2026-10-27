@@ -38,10 +38,10 @@ INSTALLED_APPS = [
     'django.contrib.messages',
     'cloudinary_storage',
     'cloudinary',
-    'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework.authtoken',
     'Negocioapp',
+    'django.contrib.staticfiles',
 ]
 
 MIDDLEWARE = [
@@ -123,7 +123,7 @@ USE_TZ = True
 
 STATIC_URL = '/static/'
 STATIC_ROOT = BASE_DIR / 'staticfiles'
-STATICFILES_DIRS = [BASE_DIR / 'Negocioapp' / 'static',]
+STATICFILES_DIRS = []
 #STATICFILES_STORAGE = 'whitenoise.storage.CompressedStaticFilesStorage'
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
