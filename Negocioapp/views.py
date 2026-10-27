@@ -135,7 +135,8 @@ class ProductoApiView(APIView):
             'fecha_registro': producto.fecha_registro,
             'precio_compra': producto.precio_compra,
             'precio_venta': producto.precio_venta,
-            'estado': producto.estado # Este es para dar de baja un producto que no se considere sin romper el historial de la BD
+            'estado': producto.estado, # Este es para dar de baja un producto que no se considere sin romper el historial de la BD
+            'imagen': producto.imagen.url if producto.imagen else None
 
             })
         return Response(datos, status=status.HTTP_200_OK)
@@ -150,6 +151,9 @@ class ProductoApiView(APIView):
         precio_compra = int(request.data.get('precio_compra'))
         precio_venta = int(request.data.get('precio_venta'))
         estado = request.data.get('estado')
+
+        imagen = request.FILES.get('imagen')
+        
 
         if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None or  precio_venta is None or estado is None:
 
@@ -176,6 +180,7 @@ class ProductoApiView(APIView):
             precio_compra=precio_compra,
             precio_venta=precio_venta,
             estado=estado,
+            imagen=imagen,
             
         )
 
@@ -211,7 +216,8 @@ class ProductoApiView(APIView):
                 'fecha_registro': producto.fecha_registro,
                 'precio_compra': producto.precio_compra,
                 'precio_venta': producto.precio_venta,
-                'estado': producto.estado
+                'estado': producto.estado,
+                'imagen': producto.imagen.url if producto.imagen else None
             }
         },status=status.HTTP_201_CREATED)
 
@@ -233,7 +239,8 @@ class ProductoDetallApiView(APIView):
             'fecha_registro': producto.fecha_registro,
             'precio_compra': producto.precio_compra,
             'precio_venta': producto.precio_venta,
-            'estado': producto.estado 
+            'estado': producto.estado,
+            'imagen': producto.imagen.url if producto.imagen else None
         })
 
     def put(self, request, id):
@@ -248,6 +255,8 @@ class ProductoDetallApiView(APIView):
         precio_compra = request.data.get('precio_compra')
         precio_venta = request.data.get('precio_venta')
         estado = request.data.get('estado')
+
+        imagen = request.FILES.get('imagen')
 
         if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None  or precio_venta is None or estado is None:
     
@@ -273,7 +282,10 @@ class ProductoDetallApiView(APIView):
         producto.precio_compra=precio_compra
         producto.precio_venta=precio_venta
         producto.estado=estado
-        
+
+        if imagen:
+            producto.imagen = imagen
+
         producto.save()
         return Response({
             'mesaje': 'Producto actualizado',
@@ -286,7 +298,8 @@ class ProductoDetallApiView(APIView):
                 'fecha_registro': producto.fecha_registro,
                 'precio_compra': producto.precio_compra,
                 'precio_venta': producto.precio_venta,
-                'estado': producto.estado
+                'estado': producto.estado,
+                'imagen': producto.imagen.url if producto.imagen else None
             }
         },status=status.HTTP_200_OK)
 
@@ -303,6 +316,7 @@ class ProductoDetallApiView(APIView):
         precio_venta = int(request.data.get('precio_venta',producto.precio_venta))
         estado = request.data.get('estado',producto.estado)
 
+        imagen = request.FILES.get('imagen')
         
         if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None  or precio_venta is None or estado is None:
                 return Response({
@@ -329,6 +343,9 @@ class ProductoDetallApiView(APIView):
         producto.precio_venta=precio_venta
         producto.estado=estado
 
+        if imagen:
+            producto.imagen = imagen
+
         producto.save()
         return Response({
             'mesaje': 'Producto actualizado',
@@ -341,7 +358,8 @@ class ProductoDetallApiView(APIView):
                 'fecha_registro': producto.fecha_registro,
                 'precio_compra': producto.precio_compra,
                 'precio_venta': producto.precio_venta,
-                'estado': producto.estado
+                'estado': producto.estado,
+                'imagen': producto.imagen.url if producto.imagen else None
             }
         },status=status.HTTP_200_OK)
 
@@ -368,7 +386,8 @@ class StockApiView(APIView):
                 'producto': stock.producto_id,            
                 'producto_nombre': stock.producto.nombre, 
                 'stock_actual': stock.stock_actual,
-                'stock_minimo': stock.stock_minimo
+                'stock_minimo': stock.stock_minimo,
+                'imagen': stock.producto.imagen.url if stock.producto.imagen else None
             })
 
         return Response(datos1, status=status.HTTP_200_OK)
@@ -387,7 +406,8 @@ class StockDetalleApiView(APIView):
             'producto': stock.producto_id,
             'producto_nombre': stock.producto.nombre,
             'stock_actual': stock.stock_actual,
-            'stock_minimo': stock.stock_minimo
+            'stock_minimo': stock.stock_minimo,
+            'imagen': stock.producto.imagen.url if stock.producto.imagen else None
         }
         return Response(data, status=status.HTTP_200_OK)
     

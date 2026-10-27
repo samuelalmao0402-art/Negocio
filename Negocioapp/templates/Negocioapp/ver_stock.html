@@ -75,6 +75,7 @@
                         <table class="table table-hover align-middle">
                             <thead>
                                 <tr>
+                                    <th>Imagen</th>
                                     <th>ID</th>
                                     <th>Producto</th>
                                     <th>Stock Actual</th>
@@ -104,7 +105,7 @@
     </div>
 </div>
 
-<!-- Script para consultar la API de stock con colores condicionales (Mantiene intacta tu lógica original) -->
+<!-- Script para consultar la API de stock con renderizado de imagen y colores condicionales -->
 <script>
     const token = localStorage.getItem('authToken');
 
@@ -134,9 +135,6 @@
                 const tr = document.createElement('tr');
                 
                 // Lógica de colores para el Stock Actual:
-                // - Rojo si quedan <= 3 unidades
-                // - Amarillo si quedan <= 5 unidades
-                // - Verde por defecto (cuando aún queda suficiente stock)
                 let colorStockActual = 'text-success fw-bold';
                 if (item.stock_actual <= 3) {
                     colorStockActual = 'text-danger fw-bold';
@@ -144,7 +142,7 @@
                     colorStockActual = 'text-warning fw-bold';
                 }
 
-                // El stock mínimo siempre va en verde como solicitaste
+                // El stock mínimo siempre va en verde
                 const colorStockMinimo = 'text-success fw-bold';
 
                 // Determinar estado de alerta general
@@ -153,7 +151,13 @@
                     estadoBadge = '<span class="badge rounded-pill px-3 py-2" style="background-color: #c95c4b; color: #fff;">Stock Bajo</span>';
                 }
 
+                // Renderizar la miniatura de la imagen si viene en la API
+                const imagenHtml = item.imagen 
+                    ? `<img src="${item.imagen}" alt="Imagen de ${item.producto_nombre || 'producto'}" width="45" height="45" style="object-fit: cover; border-radius: 8px; border: 1px solid #e8a87c;">` 
+                    : `<span class="text-muted small font-italic">Sin imagen</span>`;
+
                 tr.innerHTML = `
+                    <td>${imagenHtml}</td>
                     <td class="fw-semibold">${item.id}</td>
                     <td class="fw-bold" style="color: #c95c4b;">${item.producto_nombre || item.producto || 'Producto #' + item.id}</td>
                     <td><span class="${colorStockActual}">${item.stock_actual}</span></td>

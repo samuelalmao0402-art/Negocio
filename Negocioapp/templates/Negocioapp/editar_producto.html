@@ -5,7 +5,6 @@
 
 {% block content %}
 <style>
-    /* Estilos personalizados para mantener la estética pastel (Sin marrón) */
     .card-pastel {
         background-color: #FDF6EC;
         border: 1px solid rgba(232, 168, 124, 0.4);
@@ -81,8 +80,8 @@
 
                             <div class="col-md-6">
                                 <label for="categoria" class="form-label fw-bold small text-secondary">Categoría</label>
-                                 <select class="form-select" id="categoria" required>
-                                    <option value="" selected disabled>Seleccione una nueva categoria...</option>
+                                <select class="form-select" id="categoria" required>
+                                    <option value="" selected disabled>Seleccione una categoría...</option>
                                     <option value="alimento">ALIMENTO</option>
                                     <option value="higiene">HIGIENE</option>
                                     <option value="ropa">ROPA</option>
@@ -95,6 +94,19 @@
                             <div class="col-12">
                                 <label for="descripcion" class="form-label fw-bold small text-secondary">Descripción</label>
                                 <textarea class="form-control" id="descripcion" rows="2" required></textarea>
+                            </div>
+
+                            <!-- Fotografía y Vista Previa -->
+                            <div class="col-12">
+                                <label for="imagen" class="form-label fw-bold small text-secondary">Fotografía del Producto</label>
+                                
+                                <div id="preview-container" class="mb-2 d-none">
+                                    <span class="d-block small text-muted mb-1">Imagen actual:</span>
+                                    <img id="imagen-actual-preview" src="" alt="Imagen actual" class="rounded shadow-sm" style="width: 80px; height: 80px; object-fit: cover; border: 1px solid #e8a87c;">
+                                </div>
+
+                                <input type="file" class="form-control" id="imagen" accept="image/*">
+                                <div class="form-text small text-muted">Deja este campo en blanco si no deseas cambiar la imagen actual.</div>
                             </div>
 
                             <!-- Precios -->
@@ -128,12 +140,10 @@
                             </div>
                         </div>
 
-                        <!-- Alertas -->
                         <div id="alert-container" class="mt-4 d-none">
                             <div class="alert border-0 shadow-sm text-center fw-semibold py-2" id="alert-message"></div>
                         </div>
 
-                        <!-- Botones de Acción -->
                         <div class="d-flex justify-content-between mt-4 pt-2">
                             <a href="{% url 'productos' %}" class="btn btn-pastel-light px-4 fw-bold shadow-sm">⬅️ Cancelar</a>
                             <button type="submit" class="btn btn-pastel-primary px-4 fw-bold shadow-sm">✨ Guardar Cambios</button>
@@ -145,12 +155,10 @@
     </div>
 </div>
 
-<!-- Script para cargar y actualizar datos mediante la API (Mantiene intacta tu lógica original) -->
 <script>
     const productoId = "{{ producto_id }}";
     const token = localStorage.getItem('authToken');
 
-    // 1. Cargar los datos actuales del producto al abrir la vista
     fetch(`/api/producto/${productoId}/`, {
         method: 'GET',
         headers: {
@@ -168,6 +176,13 @@
             document.getElementById('fecha_registro').value = data.fecha_registro;
             document.getElementById('fecha_caducidad').value = data.fecha_caducidad || '';
             document.getElementById('estado').value = data.estado ? 'true' : 'false';
+
+            if (data.imagen) {
+                const previewContainer = document.getElementById('preview-container');
+                const imgPreview = document.getElementById('imagen-actual-preview');
+                imgPreview.src = data.imagen;
+                previewContainer.classList.remove('d-none');
+            }
         } else {
             alert('No se pudo cargar la información del producto.');
         }
@@ -176,31 +191,38 @@
         console.error('Error de conexión:', error);
     });
 
-    // 2. Enviar los cambios actualizados mediante PUT
     document.getElementById('editar-producto-form').addEventListener('submit', function(e) {
         e.preventDefault();
 
         const alertContainer = document.getElementById('alert-container');
         const alertMessage = document.getElementById('alert-message');
 
-        const payload = {
-            nombre: document.getElementById('nombre').value,
-            descripcion: document.getElementById('descripcion').value,
-            categoria: document.getElementById('categoria').value,
-            precio_compra: parseFloat(document.getElementById('precio_compra').value),
-            precio_venta: parseFloat(document.getElementById('precio_venta').value),
-            fecha_registro: document.getElementById('fecha_registro').value,
-            fecha_caducidad: document.getElementById('fecha_caducidad').value || null,
-            estado: document.getElementById('estado').value === 'true'
-        };
+        const formData = new FormData();
+        formData.append('nombre', document.getElementById('nombre').value);
+        formData.append('descripcion', document.getElementById('descripcion').value);
+        formData.append('categoria', document.getElementById('categoria').value);
+        formData.append('precio_compra', document.getElementById('precio_compra').value);
+        formData.append('precio_venta', document.getElementById('precio_venta').value);
+        formData.append('fecha_registro', document.getElementById('fecha_registro').value);
+        
+        const fechaCaducidad = document.getElementById('fecha_caducidad').value;
+        if (fechaCaducidad) {
+            formData.append('fecha_caducidad', fechaCaducidad);
+        }
+        
+        formData.append('estado', document.getElementById('estado').value === 'true');
+
+        const imagenInput = document.getElementById('imagen');
+        if (imagenInput.files[0]) {
+            formData.append('imagen', imagenInput.files[0]);
+        }
 
         fetch(`/api/producto/${productoId}/`, {
             method: 'PUT',
             headers: {
-                'Content-Type': 'application/json',
                 'Authorization': token ? `Token ${token}` : ''
             },
-            body: JSON.stringify(payload)
+            body: formData
         })
         .then(response => response.json().then(data => ({ status: response.status, body: data })))
         .then(obj => {

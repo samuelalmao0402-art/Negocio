@@ -5,7 +5,6 @@
 
 {% block content %}
 <style>
-    /* Estilos personalizados para mantener la estética pastel (Sin marrón) */
     .card-pastel {
         background-color: #FDF6EC;
         border: 1px solid rgba(232, 168, 124, 0.4);
@@ -98,6 +97,12 @@
                                 <textarea class="form-control" id="descripcion" rows="2" required placeholder="Descripción detallada del producto"></textarea>
                             </div>
 
+                            <!-- Fotografía -->
+                            <div class="col-12">
+                                <label for="imagen" class="form-label fw-bold small text-secondary">Fotografía del Producto</label>
+                                <input type="file" class="form-control" id="imagen" accept="image/*">
+                            </div>
+
                             <!-- Precios -->
                             <div class="col-md-6">
                                 <label for="precio_compra" class="form-label fw-bold small text-secondary">Precio de Compra ($)</label>
@@ -145,12 +150,10 @@
                             </div>
                         </div>
 
-                        <!-- Alertas -->
                         <div id="alert-container" class="mt-4 d-none">
                             <div class="alert border-0 shadow-sm text-center fw-semibold py-2" id="alert-message"></div>
                         </div>
 
-                        <!-- Botones de Acción -->
                         <div class="d-flex justify-content-between mt-4 pt-2">
                             <a href="{% url 'productos' %}" class="btn btn-pastel-light px-4 fw-bold shadow-sm">⬅️ Cancelar</a>
                             <button type="submit" class="btn btn-pastel-primary px-4 fw-bold shadow-sm">✨ Guardar Producto</button>
@@ -162,9 +165,7 @@
     </div>
 </div>
 
-<!-- Script de consumo de API (Mantiene intacta tu lógica original) -->
 <script>
-    // Asignar fecha actual por defecto a fecha_registro
     document.getElementById('fecha_registro').value = new Date().toISOString().split('T')[0];
 
     document.getElementById('crear-producto-form').addEventListener('submit', function(e) {
@@ -174,26 +175,34 @@
         const alertContainer = document.getElementById('alert-container');
         const alertMessage = document.getElementById('alert-message');
 
-        const payload = {
-            nombre: document.getElementById('nombre').value,
-            descripcion: document.getElementById('descripcion').value,
-            categoria: document.getElementById('categoria').value,
-            precio_compra: parseFloat(document.getElementById('precio_compra').value),
-            precio_venta: parseFloat(document.getElementById('precio_venta').value),
-            fecha_registro: document.getElementById('fecha_registro').value,
-            fecha_caducidad: document.getElementById('fecha_caducidad').value || null,
-            estado: document.getElementById('estado').value === 'true',
-            stock_actual: parseInt(document.getElementById('stock_actual').value),
-            stock_minimo: parseInt(document.getElementById('stock_minimo').value)
-        };
+        const formData = new FormData();
+        formData.append('nombre', document.getElementById('nombre').value);
+        formData.append('descripcion', document.getElementById('descripcion').value);
+        formData.append('categoria', document.getElementById('categoria').value);
+        formData.append('precio_compra', document.getElementById('precio_compra').value);
+        formData.append('precio_venta', document.getElementById('precio_venta').value);
+        formData.append('fecha_registro', document.getElementById('fecha_registro').value);
+        
+        const fechaCaducidad = document.getElementById('fecha_caducidad').value;
+        if (fechaCaducidad) {
+            formData.append('fecha_caducidad', fechaCaducidad);
+        }
+        
+        formData.append('estado', document.getElementById('estado').value === 'true');
+        formData.append('stock_actual', document.getElementById('stock_actual').value);
+        formData.append('stock_minimo', document.getElementById('stock_minimo').value);
+
+        const imagenInput = document.getElementById('imagen');
+        if (imagenInput.files[0]) {
+            formData.append('imagen', imagenInput.files[0]);
+        }
 
         fetch('/api/producto/', {
             method: 'POST',
             headers: {
-                'Content-Type': 'application/json',
                 'Authorization': token ? `Token ${token}` : ''
             },
-            body: JSON.stringify(payload)
+            body: formData
         })
         .then(response => response.json().then(data => ({ status: response.status, body: data })))
         .then(obj => {
