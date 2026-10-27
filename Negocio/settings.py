@@ -134,7 +134,7 @@ STORAGES = {
     },
     # Para los archivos de diseño de la página, logo y fondo (WhiteNoise)
     "staticfiles": {
-        "BACKEND": "whitenoise.storage.CompressedStaticFilesStorage",
+        "BACKEND": "django.core.files.storage.FileSystemStorage",
     },
 }
 
