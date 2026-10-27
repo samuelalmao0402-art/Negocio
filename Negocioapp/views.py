@@ -141,22 +141,29 @@ class ProductoApiView(APIView):
             })
         return Response(datos, status=status.HTTP_200_OK)
 
-    def post(self,request):# Crear Un producto funcion del post 
-
+    def post(self, request): 
         nombre = request.data.get('nombre')
         descripcion = request.data.get('descripcion')
         categoria = request.data.get('categoria')
-        fecha_caducidad= request.data.get('fecha_caducidad')
+        fecha_caducidad = request.data.get('fecha_caducidad')
         fecha_registro = request.data.get('fecha_registro')
-        precio_compra = int(request.data.get('precio_compra'))
-        precio_venta = int(request.data.get('precio_venta'))
-        estado = request.data.get('estado')
+        
+        # Casteo seguro para evitar ValueError (Error 500) si los precios vienen vacíos
+        raw_compra = request.data.get('precio_compra')
+        raw_venta = request.data.get('precio_venta')
+        precio_compra = int(raw_compra) if raw_compra not in [None, ''] else None
+        precio_venta = int(raw_venta) if raw_venta not in [None, ''] else None
+
+        # Conversión limpia del estado de texto ('true'/'false') a booleano
+        estado_raw = request.data.get('estado')
+        if isinstance(estado_raw, str):
+            estado = estado_raw.lower() == 'true'
+        else:
+            estado = estado_raw
 
         imagen = request.FILES.get('imagen')
-        
 
-        if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None or  precio_venta is None or estado is None:
-
+        if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None or precio_venta is None or estado is None:
             return Response({
                 'error': 'Ningun campo puede estar vacio, son obligatorios'
             }, status=status.HTTP_400_BAD_REQUEST)
@@ -169,45 +176,51 @@ class ProductoApiView(APIView):
         if Producto.objects.filter(nombre__iexact=nombre).exists():
             return Response({
                 'error': 'No pueden existir productos con el mismo nombre, utiliza otro nombre '
-            },status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         producto = Producto.objects.create(
             nombre=nombre,
             descripcion=descripcion,
             categoria=categoria,
-            fecha_caducidad = fecha_caducidad if fecha_caducidad else None,
+            fecha_caducidad=fecha_caducidad if fecha_caducidad else None,
             fecha_registro=fecha_registro,
             precio_compra=precio_compra,
             precio_venta=precio_venta,
             estado=estado,
             imagen=imagen,
-            
         )
 
-        stock_actual = request.data.get('stock_actual')
-        stock_minimo = request.data.get('stock_minimo')
+        # Captura y casteo seguro de stock (evita el error con el valor 0)
+        raw_stock_actual = request.data.get('stock_actual')
+        raw_stock_minimo = request.data.get('stock_minimo')
 
-        if not stock_actual or not stock_minimo:
+        if raw_stock_actual in [None, ''] or raw_stock_minimo in [None, '']:
             return Response({
-                'mensaje': 'Stock mimino y actual no puede estar vacio'
+                'mensaje': 'Stock mínimo y actual no pueden estar vacíos'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        stock_actual = int(stock_actual)
-        stock_minimo = int(stock_minimo)
+        try:
+            stock_actual = int(raw_stock_actual)
+            stock_minimo = int(raw_stock_minimo)
+        except ValueError:
+            return Response({
+                'mensaje': 'Los valores de stock deben ser numéricos'
+            }, status=status.HTTP_400_BAD_REQUEST)
         
-        if stock_minimo< 1 or stock_actual < 0:
+        if stock_minimo < 1 or stock_actual < 0:
             return Response({
-                'mensaje': 'El stock minimo no puede ser negativo y el stock actual debe ser 0 o mayor a 1'
+                'mensaje': 'El stock mínimo no puede ser negativo y el stock actual debe ser 0 o mayor'
             }, status=status.HTTP_400_BAD_REQUEST)
+            
         Stock.objects.create(
-                producto=producto,
-                stock_actual=stock_actual,
-                stock_minimo=stock_minimo,
-            ) 
+            producto=producto,
+            stock_actual=stock_actual,
+            stock_minimo=stock_minimo,
+        ) 
        
         return Response({
-            'mesaje': 'Producto ingresado',
-            'producto':{
+            'mensaje': 'Producto ingresado',
+            'producto': {
                 'id': producto.id,
                 'nombre': producto.nombre,
                 'descripcion': producto.descripcion,
@@ -219,8 +232,8 @@ class ProductoApiView(APIView):
                 'estado': producto.estado,
                 'imagen': producto.imagen.url if producto.imagen else None
             }
-        },status=status.HTTP_201_CREATED)
-
+        }, status=status.HTTP_201_CREATED)
+    
 class ProductoDetallApiView(APIView):
     authentication_classes= [TokenAuthentication]
     permission_classes = [IsAuthenticated]
@@ -241,32 +254,34 @@ class ProductoDetallApiView(APIView):
             'precio_venta': producto.precio_venta,
             'estado': producto.estado,
             'imagen': producto.imagen.url if producto.imagen else None
-        })
+        }, status=status.HTTP_200_OK)
+
+  
 
     def put(self, request, id):
-
         producto = get_object_or_404(Producto, id=id)
 
         nombre = request.data.get('nombre')
         descripcion = request.data.get('descripcion')
         categoria = request.data.get('categoria')
-        fecha_caducidad= request.data.get('fecha_caducidad')
+        fecha_caducidad = request.data.get('fecha_caducidad')
         fecha_registro = request.data.get('fecha_registro')
-
+        
         raw_compra = request.data.get('precio_compra')
         raw_venta = request.data.get('precio_venta')
         precio_compra = int(raw_compra) if raw_compra not in [None, ''] else None
         precio_venta = int(raw_venta) if raw_venta not in [None, ''] else None
-
-        estado = request.data.get('estado')
-
+        
+        # Conversión limpia del estado de texto a booleano real
+        estado_raw = request.data.get('estado')
+        estado = (estado_raw.lower() == 'true') if isinstance(estado_raw, str) else estado_raw
+        
         imagen = request.FILES.get('imagen')
 
-        if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None  or precio_venta is None or estado is None:
-    
-                return Response({
-                    'error': 'Ningun campo puede estar vacio, son obligatorios'
-                }, status=status.HTTP_400_BAD_REQUEST)
+        if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None or precio_venta is None or estado is None:
+            return Response({
+                'error': 'Ningun campo puede estar vacio, son obligatorios'
+            }, status=status.HTTP_400_BAD_REQUEST)
         
         if precio_compra < 0 or precio_venta < 0:
             return Response({
@@ -276,24 +291,24 @@ class ProductoDetallApiView(APIView):
         if Producto.objects.filter(nombre__iexact=nombre).exclude(id=producto.id).exists():
             return Response({
                 'error': 'No pueden existir productos con el mismo nombre, utiliza otro nombre '
-            },status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_400_BAD_REQUEST)
     
         producto.nombre = nombre 
-        producto.descripcion=descripcion
-        producto.categoria=categoria
-        producto.fecha_caducidad=fecha_caducidad if fecha_caducidad else None
-        producto.fecha_registro=fecha_registro
-        producto.precio_compra=precio_compra
-        producto.precio_venta=precio_venta
-        producto.estado=estado
+        producto.descripcion = descripcion
+        producto.categoria = categoria
+        producto.fecha_caducidad = fecha_caducidad if fecha_caducidad else None
+        producto.fecha_registro = fecha_registro
+        producto.precio_compra = precio_compra
+        producto.precio_venta = precio_venta
+        producto.estado = estado
 
         if imagen:
             producto.imagen = imagen
 
         producto.save()
         return Response({
-            'mesaje': 'Producto actualizado',
-            'producto':{
+            'mensaje': 'Producto actualizado',
+            'producto': {
                 'id': producto.id,
                 'nombre': producto.nombre,
                 'descripcion': producto.descripcion,
@@ -305,31 +320,36 @@ class ProductoDetallApiView(APIView):
                 'estado': producto.estado,
                 'imagen': producto.imagen.url if producto.imagen else None
             }
-        },status=status.HTTP_200_OK)
+        }, status=status.HTTP_200_OK)
 
     def patch(self, request, id):
-
         producto = get_object_or_404(Producto, id=id)
 
         nombre = request.data.get('nombre', producto.nombre)
         descripcion = request.data.get('descripcion', producto.descripcion)
-        categoria = request.data.get('categoria',producto.categoria)
-        fecha_caducidad= request.data.get('fecha_caducidad',producto.fecha_caducidad)
-        fecha_registro = request.data.get('fecha_registro',producto.fecha_registro)
-
+        categoria = request.data.get('categoria', producto.categoria)
+        fecha_caducidad = request.data.get('fecha_caducidad', producto.fecha_caducidad)
+        fecha_registro = request.data.get('fecha_registro', producto.fecha_registro)
+        
         raw_compra = request.data.get('precio_compra')
         precio_compra = int(raw_compra) if raw_compra not in [None, ''] else producto.precio_compra
+
         raw_venta = request.data.get('precio_venta')
         precio_venta = int(raw_venta) if raw_venta not in [None, ''] else producto.precio_venta
 
-        estado = request.data.get('estado',producto.estado)
+        # Conversión limpia del estado en PATCH (si viene en la petición)
+        estado_raw = request.data.get('estado')
+        if estado_raw is not None:
+            estado = (estado_raw.lower() == 'true') if isinstance(estado_raw, str) else estado_raw
+        else:
+            estado = producto.estado
 
         imagen = request.FILES.get('imagen')
         
-        if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None  or precio_venta is None or estado is None:
-                return Response({
-                    'error': 'Ningun campo puede estar vacio, son obligatorios'
-                }, status=status.HTTP_400_BAD_REQUEST)
+        if not nombre or not descripcion or not categoria or not fecha_registro or precio_compra is None or precio_venta is None or estado is None:
+            return Response({
+                'error': 'Ningun campo puede estar vacio, son obligatorios'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
         if precio_compra <= 0 or precio_venta <= 0:
             return Response({
@@ -339,25 +359,24 @@ class ProductoDetallApiView(APIView):
         if Producto.objects.filter(nombre__iexact=nombre).exclude(id=producto.id).exists():
             return Response({
                 'error': 'No pueden existir productos con el mismo nombre, utiliza otro nombre '
-            },status=status.HTTP_400_BAD_REQUEST)
+            }, status=status.HTTP_400_BAD_REQUEST)
     
-
         producto.nombre = nombre 
-        producto.descripcion=descripcion
-        producto.categoria=categoria
-        producto.fecha_caducidad=fecha_caducidad if fecha_caducidad else None
-        producto.fecha_registro=fecha_registro
-        producto.precio_compra=precio_compra
-        producto.precio_venta=precio_venta
-        producto.estado=estado
+        producto.descripcion = descripcion
+        producto.categoria = categoria
+        producto.fecha_caducidad = fecha_caducidad if fecha_caducidad else None
+        producto.fecha_registro = fecha_registro
+        producto.precio_compra = precio_compra
+        producto.precio_venta = precio_venta
+        producto.estado = estado
 
         if imagen:
             producto.imagen = imagen
 
         producto.save()
         return Response({
-            'mesaje': 'Producto actualizado',
-            'producto':{
+            'mensaje': 'Producto actualizado',
+            'producto': {
                 'id': producto.id,
                 'nombre': producto.nombre,
                 'descripcion': producto.descripcion,
@@ -369,24 +388,21 @@ class ProductoDetallApiView(APIView):
                 'estado': producto.estado,
                 'imagen': producto.imagen.url if producto.imagen else None
             }
-        },status=status.HTTP_200_OK)
-
+        }, status=status.HTTP_200_OK)
     def delete(self,request, id):
 
         producto = get_object_or_404(Producto, id=id)
         producto.estado = False
         producto.save()
         return Response({'mensaje':'Producto Eliminado'},status=status.HTTP_200_OK)
-        
+
 class StockApiView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
-    def get(self,request):
-
+    def get(self, request):
         stocks = Stock.objects.filter(producto__estado=True)
-
-        datos1= []
+        datos1 = []
 
         for stock in stocks:
             datos1.append({
@@ -399,9 +415,6 @@ class StockApiView(APIView):
             })
 
         return Response(datos1, status=status.HTTP_200_OK)
-
-
-# ver todo el stock y actualizar
 
 class StockDetalleApiView(APIView):
     authentication_classes = [TokenAuthentication]
@@ -419,69 +432,78 @@ class StockDetalleApiView(APIView):
         }
         return Response(data, status=status.HTTP_200_OK)
     
-    def put(self,request,pk):
-        try:
-            stock = Stock.objects.get(pk=pk)
-
-            stock_actual = request.data.get('stock_actual')
-            stock_minimo = request.data.get('stock_minimo')
-
-            if not stock_actual or not stock_minimo:
-                return Response({
-                    'mensaje': 'En la actualizacion del producto en stock los valores no pueden ser negativos ni mejores a cero'
-                },status=status.HTTP_400_BAD_REQUEST)
-
-            stock_actual, stock_minimo = int(stock_actual), int(stock_minimo)
-              
-            if stock_minimo< 1 or stock_actual < 0:
-                return Response({
-                    'mensaje': 'El stock minimo no puede ser negativo y el stock actual debe ser 0 o mayor a 1'
-                }, status=status.HTTP_400_BAD_REQUEST)
-            
-            stock.stock_actual=stock_actual
-            stock.stock_minimo=stock_minimo
-            stock.save()
-
-            return Response({
-                'mensaje': 'Stock actualizado correctamente'
-            }, status=status.HTTP_200_OK)
-
-        except Stock.DoesNotExist:
-            return Response({
-                'mensaje': 'No hay producto asi guardado en stock',
-            }, status=status.HTTP_404_NOT_FOUND)
-
-    def patch(self,request,pk):
-
-        try:
-            stock = Stock.objects.get(pk=pk)
-            stock_actual = request.data.get('stock_actual')
-            if stock_actual is None:
-                stock_actual = int(stock_actual)
-                if stock_actual < 0:
-                    return Response({
-                        'mensaje':'El stock actual no debe ser negativo puede ser 0 o mayor a este'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-            stock.stock_actual
-            stock_minimo = request.data.get('stock_minimo')
-            if stock_minimo is None:
-                stock_minimo = int(stock_minimo)
-                if stock_minimo < 1:
-                    return Response({
-                        'mensaje':'El stock minimo no debe ser negativo'
-                    }, status=status.HTTP_400_BAD_REQUEST)
-            stock.stock_minimo
-            stock.save()
-
-            return Response({
-                'mensaje': 'Campo del Stock actualizado correctamente'
-            }, status=status.HTTP_200_OK)
+    def put(self, request, pk):
+        stock = get_object_or_404(Stock, pk=pk)
         
-        except Stock.DoesNotExist:
+        raw_actual = request.data.get('stock_actual')
+        raw_minimo = request.data.get('stock_minimo')
+
+        if raw_actual in [None, ''] or raw_minimo in [None, '']:
             return Response({
-                'mensaje': 'No hay producto asi guardado en stock'
-            }, status=status.HTTP_404_NOT_FOUND)
-          
+                'mensaje': 'El stock actual y mínimo no pueden estar vacíos'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            stock_actual = int(raw_actual)
+            stock_minimo = int(raw_minimo)
+        except ValueError:
+            return Response({
+                'mensaje': 'Los valores de stock deben ser numéricos'
+            }, status=status.HTTP_400_BAD_REQUEST)
+              
+        if stock_minimo < 1 or stock_actual < 0:
+            return Response({
+                'mensaje': 'El stock mínimo no puede ser negativo y el stock actual debe ser 0 o mayor a 1'
+            }, status=status.HTTP_400_BAD_REQUEST)
+        
+        stock.stock_actual = stock_actual
+        stock.stock_minimo = stock_minimo
+        stock.save()
+
+        return Response({
+            'mensaje': 'Stock actualizado correctamente',
+            'stock': {
+                'id': stock.id,
+                'producto': stock.producto_id,
+                'producto_nombre': stock.producto.nombre,
+                'stock_actual': stock.stock_actual,
+                'stock_minimo': stock.stock_minimo
+            }
+        }, status=status.HTTP_200_OK)
+
+    def patch(self, request, pk):
+        stock = get_object_or_404(Stock, pk=pk)
+        
+        raw_actual = request.data.get('stock_actual')
+        raw_minimo = request.data.get('stock_minimo')
+
+        try:
+            stock_actual = int(raw_actual) if raw_actual not in [None, ''] else stock.stock_actual
+            stock_minimo = int(raw_minimo) if raw_minimo not in [None, ''] else stock.stock_minimo
+        except ValueError:
+            return Response({
+                'mensaje': 'Los valores de stock deben ser numéricos'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        if stock_minimo < 1 or stock_actual < 0:
+            return Response({
+                'mensaje': 'El stock mínimo no puede ser negativo y el stock actual debe ser 0 o mayor a 1'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
+        stock.stock_actual = stock_actual
+        stock.stock_minimo = stock_minimo
+        stock.save()
+
+        return Response({
+            'mensaje': 'Campo del Stock actualizado correctamente',
+            'stock': {
+                'id': stock.id,
+                'producto': stock.producto_id,
+                'producto_nombre': stock.producto.nombre,
+                'stock_actual': stock.stock_actual,
+                'stock_minimo': stock.stock_minimo
+            }
+        }, status=status.HTTP_200_OK)
 
 class VentaApiView(APIView):
     authentication_classes = [TokenAuthentication]
