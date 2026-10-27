@@ -117,27 +117,22 @@ class ProductoApiView(APIView):
     authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
     
-
-    def get(self,request):#Ver todos los productos por medio de un array llamado datos con get 
-
+    def get(self, request):
         productos = Producto.objects.filter(estado=True)
-
         datos = []
 
         for producto in productos:
             datos.append({
-
-            'id': producto.id,
-            'nombre': producto.nombre,
-            'descripcion': producto.descripcion,
-            'categoria': producto.categoria,
-            'fecha_caducidad': producto.fecha_caducidad,
-            'fecha_registro': producto.fecha_registro,
-            'precio_compra': producto.precio_compra,
-            'precio_venta': producto.precio_venta,
-            'estado': producto.estado, # Este es para dar de baja un producto que no se considere sin romper el historial de la BD
-            'imagen': producto.imagen.url if producto.imagen else None
-
+                'id': producto.id,
+                'nombre': producto.nombre,
+                'descripcion': producto.descripcion,
+                'categoria': producto.categoria,
+                'fecha_caducidad': producto.fecha_caducidad,
+                'fecha_registro': producto.fecha_registro,
+                'precio_compra': producto.precio_compra,
+                'precio_venta': producto.precio_venta,
+                'estado': producto.estado,
+                'imagen': producto.imagen.url if producto.imagen else None
             })
         return Response(datos, status=status.HTTP_200_OK)
 
@@ -148,13 +143,19 @@ class ProductoApiView(APIView):
         fecha_caducidad = request.data.get('fecha_caducidad')
         fecha_registro = request.data.get('fecha_registro')
         
-        # Casteo seguro para evitar ValueError (Error 500) si los precios vienen vacíos
+        # Casteo seguro con float para admitir decimales y evitar errores 500
         raw_compra = request.data.get('precio_compra')
         raw_venta = request.data.get('precio_venta')
-        precio_compra = int(raw_compra) if raw_compra not in [None, ''] else None
-        precio_venta = int(raw_venta) if raw_venta not in [None, ''] else None
+        
+        try:
+            precio_compra = float(raw_compra) if raw_compra not in [None, ''] else None
+            precio_venta = float(raw_venta) if raw_venta not in [None, ''] else None
+        except (ValueError, TypeError):
+            return Response({
+                'error': 'Los precios de compra y venta deben ser numéricos válidos'
+            }, status=status.HTTP_400_BAD_REQUEST)
 
-        # Conversión limpia del estado de texto ('true'/'false') a booleano
+        # Conversión limpia del estado
         estado_raw = request.data.get('estado')
         if isinstance(estado_raw, str):
             estado = estado_raw.lower() == 'true'
@@ -190,7 +191,6 @@ class ProductoApiView(APIView):
             imagen=imagen,
         )
 
-        # Captura y casteo seguro de stock (evita el error con el valor 0)
         raw_stock_actual = request.data.get('stock_actual')
         raw_stock_minimo = request.data.get('stock_minimo')
 
@@ -200,11 +200,11 @@ class ProductoApiView(APIView):
             }, status=status.HTTP_400_BAD_REQUEST)
 
         try:
-            stock_actual = int(raw_stock_actual)
-            stock_minimo = int(raw_stock_minimo)
-        except ValueError:
+            stock_actual = int(float(raw_stock_actual))
+            stock_minimo = int(float(raw_stock_minimo))
+        except (ValueError, TypeError):
             return Response({
-                'mensaje': 'Los valores de stock deben ser numéricos'
+                'mensaje': 'Los valores de stock deben ser numéricos válidos'
             }, status=status.HTTP_400_BAD_REQUEST)
         
         if stock_minimo < 1 or stock_actual < 0:
@@ -235,15 +235,12 @@ class ProductoApiView(APIView):
         }, status=status.HTTP_201_CREATED)
     
 class ProductoDetallApiView(APIView):
-    authentication_classes= [TokenAuthentication]
+    authentication_classes = [TokenAuthentication]
     permission_classes = [IsAuthenticated]
 
     def get(self, request, id):
-
-        producto = get_object_or_404(Producto,id=id)
-
+        producto = get_object_or_404(Producto, id=id)
         return Response({
-
             'id': producto.id,
             'nombre': producto.nombre,
             'descripcion': producto.descripcion,
@@ -256,8 +253,6 @@ class ProductoDetallApiView(APIView):
             'imagen': producto.imagen.url if producto.imagen else None
         }, status=status.HTTP_200_OK)
 
-  
-
     def put(self, request, id):
         producto = get_object_or_404(Producto, id=id)
 
@@ -267,14 +262,18 @@ class ProductoDetallApiView(APIView):
         fecha_caducidad = request.data.get('fecha_caducidad')
         fecha_registro = request.data.get('fecha_registro')
         
-        raw_compra = request.data.get('precio_compra')
-        raw_venta = request.data.get('precio_venta')
-        precio_compra = int(raw_compra) if raw_compra not in [None, ''] else None
-        precio_venta = int(raw_venta) if raw_venta not in [None, ''] else None
+        try:
+            raw_compra = request.data.get('precio_compra')
+            raw_venta = request.data.get('precio_venta')
+            precio_compra = float(raw_compra) if raw_compra not in [None, ''] else None
+            precio_venta = float(raw_venta) if raw_venta not in [None, ''] else None
+        except (ValueError, TypeError):
+            return Response({
+                'error': 'Los precios de compra y venta deben ser numéricos válidos'
+            }, status=status.HTTP_400_BAD_REQUEST)
         
-        # Conversión limpia del estado de texto a booleano real
         estado_raw = request.data.get('estado')
-        estado = (estado_raw.lower() == 'true') if isinstance(estado_raw, str) else estado_raw
+        estado = (str(estado_raw).lower() == 'true') if isinstance(estado_raw, (str, bool)) else estado_raw
         
         imagen = request.FILES.get('imagen')
 
@@ -296,7 +295,7 @@ class ProductoDetallApiView(APIView):
         producto.nombre = nombre 
         producto.descripcion = descripcion
         producto.categoria = categoria
-        producto.fecha_caducidad = fecha_caducidad if fecha_caducidad else None
+        producto.fecha_caducidad = fecha_caducidad if fecha_caducidad not in [None, ''] else None
         producto.fecha_registro = fecha_registro
         producto.precio_compra = precio_compra
         producto.precio_venta = precio_venta
@@ -328,19 +327,27 @@ class ProductoDetallApiView(APIView):
         nombre = request.data.get('nombre', producto.nombre)
         descripcion = request.data.get('descripcion', producto.descripcion)
         categoria = request.data.get('categoria', producto.categoria)
-        fecha_caducidad = request.data.get('fecha_caducidad', producto.fecha_caducidad)
-        fecha_registro = request.data.get('fecha_registro', producto.fecha_registro)
         
-        raw_compra = request.data.get('precio_compra')
-        precio_compra = int(raw_compra) if raw_compra not in [None, ''] else producto.precio_compra
+        raw_caducidad = request.data.get('fecha_caducidad')
+        fecha_caducidad = raw_caducidad if raw_caducidad not in [None, ''] else producto.fecha_caducidad
 
-        raw_venta = request.data.get('precio_venta')
-        precio_venta = int(raw_venta) if raw_venta not in [None, ''] else producto.precio_venta
+        raw_registro = request.data.get('fecha_registro')
+        fecha_registro = raw_registro if raw_registro not in [None, ''] else producto.fecha_registro
+        
+        try:
+            raw_compra = request.data.get('precio_compra')
+            precio_compra = float(raw_compra) if raw_compra not in [None, ''] else producto.precio_compra
 
-        # Conversión limpia del estado en PATCH (si viene en la petición)
+            raw_venta = request.data.get('precio_venta')
+            precio_venta = float(raw_venta) if raw_venta not in [None, ''] else producto.precio_venta
+        except (ValueError, TypeError):
+            return Response({
+                'error': 'Los precios de compra y venta deben ser numéricos válidos'
+            }, status=status.HTTP_400_BAD_REQUEST)
+
         estado_raw = request.data.get('estado')
         if estado_raw is not None:
-            estado = (estado_raw.lower() == 'true') if isinstance(estado_raw, str) else estado_raw
+            estado = (str(estado_raw).lower() == 'true') if isinstance(estado_raw, (str, bool)) else producto.estado
         else:
             estado = producto.estado
 
@@ -351,7 +358,7 @@ class ProductoDetallApiView(APIView):
                 'error': 'Ningun campo puede estar vacio, son obligatorios'
             }, status=status.HTTP_400_BAD_REQUEST)
 
-        if precio_compra <= 0 or precio_venta <= 0:
+        if precio_compra < 0 or precio_venta < 0:
             return Response({
                 'error': 'Los campos precio de compra y de venta no pueden ser negativos'
             }, status=status.HTTP_400_BAD_REQUEST)            
@@ -364,7 +371,7 @@ class ProductoDetallApiView(APIView):
         producto.nombre = nombre 
         producto.descripcion = descripcion
         producto.categoria = categoria
-        producto.fecha_caducidad = fecha_caducidad if fecha_caducidad else None
+        producto.fecha_caducidad = fecha_caducidad
         producto.fecha_registro = fecha_registro
         producto.precio_compra = precio_compra
         producto.precio_venta = precio_venta
@@ -374,6 +381,7 @@ class ProductoDetallApiView(APIView):
             producto.imagen = imagen
 
         producto.save()
+        
         return Response({
             'mensaje': 'Producto actualizado',
             'producto': {
@@ -389,12 +397,12 @@ class ProductoDetallApiView(APIView):
                 'imagen': producto.imagen.url if producto.imagen else None
             }
         }, status=status.HTTP_200_OK)
-    def delete(self,request, id):
 
+    def delete(self, request, id):
         producto = get_object_or_404(Producto, id=id)
         producto.estado = False
         producto.save()
-        return Response({'mensaje':'Producto Eliminado'},status=status.HTTP_200_OK)
+        return Response({'mensaje': 'Producto Eliminado'}, status=status.HTTP_200_OK)
 
 class StockApiView(APIView):
     authentication_classes = [TokenAuthentication]
