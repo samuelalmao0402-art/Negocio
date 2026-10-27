@@ -252,8 +252,12 @@ class ProductoDetallApiView(APIView):
         categoria = request.data.get('categoria')
         fecha_caducidad= request.data.get('fecha_caducidad')
         fecha_registro = request.data.get('fecha_registro')
-        precio_compra = request.data.get('precio_compra')
-        precio_venta = request.data.get('precio_venta')
+
+        raw_compra = request.data.get('precio_compra')
+        raw_venta = request.data.get('precio_venta')
+        precio_compra = int(raw_compra) if raw_compra not in [None, ''] else None
+        precio_venta = int(raw_venta) if raw_venta not in [None, ''] else None
+
         estado = request.data.get('estado')
 
         imagen = request.FILES.get('imagen')
@@ -312,8 +316,12 @@ class ProductoDetallApiView(APIView):
         categoria = request.data.get('categoria',producto.categoria)
         fecha_caducidad= request.data.get('fecha_caducidad',producto.fecha_caducidad)
         fecha_registro = request.data.get('fecha_registro',producto.fecha_registro)
-        precio_compra = int(request.data.get('precio_compra',producto.precio_compra))
-        precio_venta = int(request.data.get('precio_venta',producto.precio_venta))
+
+        raw_compra = request.data.get('precio_compra')
+        precio_compra = int(raw_compra) if raw_compra not in [None, ''] else producto.precio_compra
+        raw_venta = request.data.get('precio_venta')
+        precio_venta = int(raw_venta) if raw_venta not in [None, ''] else producto.precio_venta
+
         estado = request.data.get('estado',producto.estado)
 
         imagen = request.FILES.get('imagen')

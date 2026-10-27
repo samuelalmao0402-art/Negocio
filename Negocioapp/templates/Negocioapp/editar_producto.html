@@ -218,7 +218,7 @@
         }
 
         fetch(`/api/producto/${productoId}/`, {
-            method: 'PUT',
+            method: 'PATCH', // <--- Actualizado a PATCH para soporte completo de actualización parcial
             headers: {
                 'Authorization': token ? `Token ${token}` : ''
             },
@@ -227,7 +227,7 @@
         .then(response => response.json().then(data => ({ status: response.status, body: data })))
         .then(obj => {
             alertContainer.classList.remove('d-none');
-            if (obj.status === 200) {
+            if (obj.status === 200) { // <--- Valida el estado HTTP 200 OK devuelto por el método patch[cite: 1]
                 alertMessage.className = 'alert border-0 shadow-sm fw-semibold py-2';
                 alertMessage.style.backgroundColor = '#d8f3dc';
                 alertMessage.style.color = '#2d6a4f';
